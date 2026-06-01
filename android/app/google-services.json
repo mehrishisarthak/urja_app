@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "878546571090",
+    "project_id": "urjaapp-c0cc6",
+    "storage_bucket": "urjaapp-c0cc6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878546571090:android:a82140b44cb66d17abb48b",
+        "android_client_info": {
+          "package_name": "com.example.urja"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878546571090-1et49ue8m390a5gigfi83jklcdhmt5u5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqB77NTRk3cjSa3ardHCLts3V2OTpAbg0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878546571090-1et49ue8m390a5gigfi83jklcdhmt5u5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

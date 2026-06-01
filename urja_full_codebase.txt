@@ -1,0 +1,1102 @@
+# URJA CODEBASE DUMP
+# Every line of code in the "urja" Flutter project.
+
+================================================================================
+FILE: pubspec.yaml
+================================================================================
+name: urja
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  cached_network_image: ^3.4.1
+  cloud_firestore: ^6.4.1
+  cupertino_icons: ^1.0.8
+  firebase_auth: ^6.5.1
+  firebase_core: ^4.9.0
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.3.1
+  go_router: ^17.2.3
+  google_fonts: ^8.1.0
+  google_sign_in: ^7.2.0
+  lottie: ^3.3.3
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+================================================================================
+FILE: analysis_options.yaml
+================================================================================
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # avoid_print: false
+    # prefer_single_quotes: true
+
+================================================================================
+FILE: lib/main.dart
+================================================================================
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'urja',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const Placeholder(),
+    );
+  }
+}
+
+================================================================================
+FILE: lib/core/theme/theme.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// --- Light Mode Theme ---
+ThemeData lightMode = ThemeData(
+  brightness: Brightness.light,
+  useMaterial3: true,
+  colorScheme: ColorScheme.light(
+    primary: Colors.green.shade700,       
+    secondary: Colors.amber.shade600,    
+    surface: Colors.white,
+    onPrimary: Colors.white,
+    onSecondary: Colors.white,
+    onSurface: Colors.black87,
+    error: Colors.redAccent.shade700,
+    onError: Colors.white,
+  ),
+  scaffoldBackgroundColor: const Color(0xFFF6F8F6), // Extremely soft green/gray hint
+  appBarTheme: AppBarTheme(
+    backgroundColor: Colors.white,
+    foregroundColor: Colors.black87,
+    elevation: 0,
+    centerTitle: true,
+    titleTextStyle: GoogleFonts.poppins(
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      color: Colors.black87,
+    ),
+  ),
+  cardTheme: CardThemeData(
+    elevation: 2,
+    color: Colors.white,
+    surfaceTintColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16), // Slightly rounder for modern card UI
+    ),
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.green.shade700,
+      foregroundColor: Colors.white,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      textStyle: GoogleFonts.poppins(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+    ),
+  ),
+  textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.green.shade600, width: 2.0),
+    ),
+    labelStyle: TextStyle(color: Colors.grey.shade600),
+  ),
+  visualDensity: VisualDensity.adaptivePlatformDensity,
+);
+
+// --- Dark Mode Theme ---
+ThemeData darkMode = ThemeData(
+  brightness: Brightness.dark,
+  useMaterial3: true,
+  colorScheme: ColorScheme.dark(
+    primary: Colors.green.shade400,       // Radiant eco-green for dark mode screens
+    secondary: Colors.amber.shade400,     // Glowing coin/energy indicators
+    surface: const Color(0xFF1A1C1A),     // Rich dark base with a subtle forest undertone
+    onPrimary: Colors.black,
+    onSecondary: Colors.black,
+    onSurface: Colors.white,
+    error: Colors.red.shade400,
+    onError: Colors.black,
+  ),
+  scaffoldBackgroundColor: const Color(0xFF0F110F), // Deep carbon-slate
+  appBarTheme: AppBarTheme(
+    backgroundColor: const Color(0xFF1A1C1A),
+    foregroundColor: Colors.white,
+    elevation: 0,
+    centerTitle: true,
+    titleTextStyle: GoogleFonts.poppins(
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      color: Colors.white,
+    ),
+  ),
+  cardTheme: CardThemeData(
+    elevation: 2,
+    color: const Color(0xFF1A1C1A),
+    surfaceTintColor: const Color(0xFF1A1C1A),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    ),
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.green.shade400,
+      foregroundColor: Colors.black,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      textStyle: GoogleFonts.poppins(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+    ),
+  ),
+  textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: const Color(0xFF242624),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.grey.shade800),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: Colors.green.shade400, width: 2.0),
+    ),
+    labelStyle: TextStyle(color: Colors.grey.shade400),
+  ),
+  visualDensity: VisualDensity.adaptivePlatformDensity,
+);
+
+================================================================================
+FILE: lib/core/shared_widgets/text_field.dart
+================================================================================
+import 'package:flutter/material.dart';
+
+class UrjaTextField extends StatelessWidget {
+  final String hintText;
+  final IconData icon;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
+
+  const UrjaTextField({
+    super.key,
+    required this.hintText,
+    required this.icon,
+    required this.controller,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      keyboardType: keyboardType,
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: Icon(icon),
+      ),
+    );
+  }
+}
+
+================================================================================
+FILE: lib/core/shared_widgets/password_field.dart
+================================================================================
+import 'package:flutter/material.dart';
+
+class UrjaPasswordField extends StatefulWidget {
+  final TextEditingController controller;
+  final String hintText;
+
+  const UrjaPasswordField({
+    super.key,
+    required this.controller,
+    this.hintText = "Password",
+  });
+
+  @override
+  State<UrjaPasswordField> createState() => _UrjaPasswordFieldState();
+}
+
+class _UrjaPasswordFieldState extends State<UrjaPasswordField> {
+  bool _isPasswordVisible = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: widget.controller,
+      obscureText: !_isPasswordVisible,
+      decoration: InputDecoration(
+        hintText: widget.hintText,
+        prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: IconButton(
+          icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
+      ),
+    );
+  }
+}
+
+================================================================================
+FILE: lib/core/routing/app_router.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+// Auth Features
+import 'package:urja/features/authentication/presentation/login.dart';
+import 'package:urja/features/authentication/presentation/signup.dart';
+// import 'package:urja/features/authentication/presentation/verify_email_screen.dart'; 
+
+// Waste Tracking / Colony Features
+// import 'package:urja/features/waste_tracking/presentation/colony_code_screen.dart';
+// import 'package:urja/features/colony_ledger/presentation/dashboard_screen.dart';
+
+// Import your Onboarding FSM provider here
+// import 'package:urja/features/authentication/providers/onboarding_provider.dart';
+
+final routerProvider = Provider<GoRouter>((ref) {
+  // Watch the State Machine! If this changes, the router automatically re-evaluates.
+  // final onboardingStatus = ref.watch(onboardingStatusProvider);
+
+  // NOTE: Uncomment the real status above once the provider is created.
+  // For testing right now, we will force it to unauthenticated.
+  const onboardingStatus = /* OnboardingStatus.unauthenticated */ null;
+
+  return GoRouter(
+    initialLocation: '/dashboard', // We set this to the final destination, the guards will intercept if needed
+    redirect: (context, state) {
+      // If we don't have the status provider hooked up yet, skip guards
+      if (onboardingStatus == null) return null; 
+
+      final currentPath = state.matchedLocation;
+      
+      final isGoingToLogin = currentPath == '/login' || currentPath == '/signup';
+      final isGoingToVerify = currentPath == '/verify-email';
+      final isGoingToSetup = currentPath == '/setup-colony';
+
+      switch (onboardingStatus) {
+        case OnboardingStatus.unauthenticated:
+          // Force to login/signup
+          return isGoingToLogin ? null : '/login';
+
+        case OnboardingStatus.emailVerificationPending:
+          // Force to verify email
+          return isGoingToVerify ? null : '/verify-email';
+
+        case OnboardingStatus.needsColonySetup:
+          // Force to colony setup
+          return isGoingToSetup ? null : '/setup-colony';
+
+        case OnboardingStatus.fullyOnboarded:
+          // If fully onboarded, block them from seeing auth screens again
+          if (isGoingToLogin || isGoingToVerify || isGoingToSetup) {
+            return '/dashboard';
+          }
+          return null; 
+          
+        case OnboardingStatus.checking:
+          // Show splash screen while Firebase loads
+          return '/splash'; 
+      }
+    },
+    routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      /* --- Uncomment these as you create the files ---
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) => const VerifyEmailScreen(),
+      ),
+      GoRoute(
+        path: '/setup-colony',
+        builder: (context, state) => const ColonyCodeScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      */
+    ],
+  );
+});
+
+================================================================================
+FILE: lib/features/authentication/data/auth_repository.dart
+================================================================================
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class AuthRepository {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _isGoogleInitialized = false;
+
+  Future<void> _ensureGoogleInitialized() async {
+    if (!_isGoogleInitialized) {
+      await _googleSignIn.initialize();
+      _isGoogleInitialized = true;
+    }
+  }
+
+  // Email & Password Sign In
+  Future<UserCredential> signInWithEmail(String email, String password) async {
+    return await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  // Email & Password Sign Up
+  Future<UserCredential> signUpWithEmail(String email, String password) async {
+    return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  }
+
+  // Google Sign In
+  Future<UserCredential?> signInWithGoogle() async {
+    await _ensureGoogleInitialized();
+
+    try {
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      final clientAuth = await googleUser.authorizationClient.authorizeScopes([
+        'email', 
+        'profile'
+      ]);
+      final googleAuth = googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: clientAuth.accessToken,
+      );
+      return await _auth.signInWithCredential(credential);
+
+    } on GoogleSignInException catch (e) {
+      if (e.code.name == 'canceled' || e.code.name == 'SIGN_IN_CANCELLED') {
+        return null; 
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> logout() async {
+    if (_isGoogleInitialized) {
+       await _googleSignIn.disconnect();
+    }
+    await _auth.signOut();
+  }
+  
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+}
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository();
+});
+
+================================================================================
+FILE: lib/features/authentication/notifiers/auth_notifier.dart
+================================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../data/auth_repository.dart';
+
+final authStateProvider = StreamProvider<User?>((ref) {
+  return ref.read(authRepositoryProvider).authStateChanges;
+});
+
+class AuthFormState {
+  final bool isLoading;
+  final String? errorMessage;
+  
+  AuthFormState({this.isLoading = false, this.errorMessage});
+}
+
+class AuthNotifier extends Notifier<AuthFormState> {
+  @override
+  AuthFormState build() {
+    return AuthFormState();
+  }
+
+  Future<void> login(String email, String password) async {
+    state = AuthFormState(isLoading: true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithEmail(email, password);
+      state = AuthFormState(isLoading: false);
+    } on FirebaseAuthException catch (e) {
+      state = AuthFormState(isLoading: false, errorMessage: e.message);
+    }
+  }
+
+  Future<void> signup(String email, String password) async {
+    state = AuthFormState(isLoading: true);
+    try {
+      await ref.read(authRepositoryProvider).signUpWithEmail(email, password);
+      state = AuthFormState(isLoading: false);
+    } on FirebaseAuthException catch (e) {
+      state = AuthFormState(isLoading: false, errorMessage: e.message);
+    }
+  }
+
+  Future<void> googleLogin() async {
+    state = AuthFormState(isLoading: true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+      state = AuthFormState(isLoading: false);
+    } on FirebaseAuthException catch (e) {
+      state = AuthFormState(isLoading: false, errorMessage: e.message);
+    } catch (e) {
+      state = AuthFormState(isLoading: false, errorMessage: "Google Sign-in failed");
+    }
+  }
+  
+  Future<void> logout() async {
+    await ref.read(authRepositoryProvider).logout();
+  }
+}
+
+final authControllerProvider = NotifierProvider<AuthNotifier, AuthFormState>(() {
+  return AuthNotifier();
+});
+
+================================================================================
+FILE: lib/features/authentication/providers/onboarding_provider.dart
+================================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+
+enum OnboardingStatus {
+  checking,                 // Splash screen loading state
+  unauthenticated,          // Not logged in at all
+  emailVerificationPending, // Logged in, but email is not verified
+  needsColonySetup,         // Logged in, verified, but has no Colony ID
+  fullyOnboarded,           // Good to go!
+}
+
+// 2. The Updated Provider
+final onboardingStatusProvider = Provider<OnboardingStatus>((ref) {
+  // Watch the user stream (Using the repo we built earlier)
+  final user = ref.watch(authStateChangesProvider).value;
+  
+  // Guard 1: Are they logged in?
+  if (user == null) {
+    return OnboardingStatus.unauthenticated;
+  }
+
+  // Guard 2: Is their email verified?
+  // Note: Google Sign-in accounts are auto-verified by Firebase!
+  if (!user.emailVerified) {
+    return OnboardingStatus.emailVerificationPending;
+  }
+
+  // Guard 3: Do they have a colony? 
+  // (Assuming you have a provider watching their Firestore profile)
+  final userProfile = ref.watch(userProfileProvider).value;
+  if (userProfile?.colonyId == null || userProfile!.colonyId.isEmpty) {
+    return OnboardingStatus.needsColonySetup;
+  }
+
+  // Guard 4: All checks passed.
+  return OnboardingStatus.fullyOnboarded;
+});
+
+================================================================================
+FILE: lib/features/authentication/presentation/login.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
+import 'package:urja/core/shared_widgets/password_field.dart';
+import 'package:urja/core/shared_widgets/text_field.dart'; 
+import '../notifiers/auth_notifier.dart'; 
+
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    // Basic frontend validation
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter both email and password.')),
+      );
+      return;
+    }
+
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
+    // Call the notifier
+    await ref.read(authControllerProvider.notifier).login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    // If login was successful (no error message), navigate to setup
+    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
+      context.go('/setup-colony');
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    await ref.read(authControllerProvider.notifier).googleLogin();
+    
+    // If login was successful (no error message), navigate to setup
+    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
+      context.go('/setup-colony');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    // 1. WATCH THE STATE: This triggers UI rebuilds when isLoading changes
+    final authState = ref.watch(authControllerProvider);
+    final bool isLoading = authState.isLoading; 
+
+    // 2. LISTEN FOR ERRORS: This triggers side-effects (like Snackbars) exactly once
+    ref.listen<AuthFormState>(authControllerProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      }
+    });
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.primary.withAlpha((255 * 0.1).toInt()),
+              colorScheme.surface,
+              colorScheme.surface,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Lottie.asset('assets/lottie/energy_bulb.json', height: 220),
+                  const Icon(Icons.bolt, size: 100, color: Colors.amber), 
+                  const SizedBox(height: 24),
+                  
+                  Text(
+                    "Welcome to Urja",
+                    textAlign: TextAlign.center,
+                    style: textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  Text(
+                    "Sign in to start earning coins", 
+                    textAlign: TextAlign.center, 
+                    style: textTheme.titleMedium
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  UrjaTextField(
+                    hintText: "Email Address",
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _emailController,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  UrjaPasswordField(
+                    controller: _passwordController,
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {},
+                      child: const Text("Forgot Password?"),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  SizedBox(
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _handleLogin,
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 24, 
+                              width: 24, 
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                            )
+                          : const Text("Login"),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: theme.dividerColor)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Text("OR", style: theme.textTheme.bodySmall),
+                      ),
+                      Expanded(child: Divider(color: theme.dividerColor)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  SizedBox(
+                    height: 55,
+                    child: OutlinedButton.icon(
+                      onPressed: isLoading ? null : _handleGoogleLogin,
+                      icon: const Icon(Icons.g_mobiledata, size: 30),
+                      label: const Text("Sign in with Google"),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Added the missing routing to the Signup Screen
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Don't have an account?", style: textTheme.bodyMedium),
+                      TextButton(
+                        onPressed: isLoading ? null : () => context.go('/signup'),
+                        child: Text(
+                          "Sign Up",
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+================================================================================
+FILE: lib/features/authentication/presentation/signup.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
+import 'package:urja/core/shared_widgets/password_field.dart';
+import 'package:urja/core/shared_widgets/text_field.dart'; 
+
+// Import your newly created Auth Notifier
+import '../notifiers/auth_notifier.dart';
+
+class SignupScreen extends ConsumerStatefulWidget {
+  const SignupScreen({super.key});
+
+  @override
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends ConsumerState<SignupScreen> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignup() async {
+    // 1. Basic frontend validation
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields.')),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Passwords do not match!")),
+      );
+      return;
+    }
+    FocusScope.of(context).unfocus();
+
+    // 2. Call the notifier
+    // Note: If you want to save the user's name to Firebase, you'll need to 
+    // update the AuthRepository later, but for now we just handle auth.
+    await ref.read(authControllerProvider.notifier).signup(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    // 3. If signup was successful (no error message), navigate to setup
+    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
+      context.go('/setup-colony');
+    }
+  }
+
+  Future<void> _handleGoogleSignup() async {
+    await ref.read(authControllerProvider.notifier).googleLogin();
+    
+    // If login was successful (no error message), navigate to setup
+    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
+      context.go('/setup-colony');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    // 1. WATCH THE STATE
+    final authState = ref.watch(authControllerProvider);
+    final bool isLoading = authState.isLoading; 
+
+    // 2. LISTEN FOR ERRORS
+    ref.listen<AuthFormState>(authControllerProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      }
+    });
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.primary.withAlpha((255 * 0.1).toInt()),
+              colorScheme.surface,
+              colorScheme.surface,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                Lottie.asset('assets/lottie/truck.json', height: 180),
+                  const Icon(Icons.eco, size: 80, color: Colors.green), // Urja theme icon
+                  const SizedBox(height: 24),
+                  
+                  Text(
+                    "Join Urja",
+                    textAlign: TextAlign.center,
+                    style: textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  Text(
+                    "Create an account to power your colony", 
+                    textAlign: TextAlign.center, 
+                    style: textTheme.titleMedium
+                  ),
+                  const SizedBox(height: 32),
+
+                  UrjaTextField(
+                    hintText: "Full Name",
+                    icon: Icons.person_outline,
+                    controller: _nameController,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  UrjaTextField(
+                    hintText: "Email Address",
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _emailController,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  UrjaPasswordField(
+                    controller: _passwordController,
+                    hintText: "Password",
+                  ),
+                  const SizedBox(height: 16),
+
+                  UrjaPasswordField(
+                    controller: _confirmPasswordController,
+                    hintText: "Confirm Password",
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  SizedBox(
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _handleSignup,
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 24, 
+                              width: 24, 
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                            )
+                          : const Text("Sign Up"),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: theme.dividerColor)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Text("OR", style: theme.textTheme.bodySmall),
+                      ),
+                      Expanded(child: Divider(color: theme.dividerColor)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  SizedBox(
+                    height: 55,
+                    child: OutlinedButton.icon(
+                      onPressed: isLoading ? null : _handleGoogleSignup,
+                      icon: const Icon(Icons.g_mobiledata, size: 30),
+                      label: const Text("Sign up with Google"),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // --- Navigation back to Login ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Already have an account?", style: textTheme.bodyMedium),
+                      TextButton(
+                        onPressed: isLoading ? null : () => context.go('/login'),
+                        child: Text(
+                          "Login",
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+================================================================================
+FILE: lib/features/colony_ledger/notifiers/colony_ledger_notifier.dart
+================================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class LedgerState {
+  final bool isLoading;
+  final String colonyId;
+  final int colonyTotalCoins; // Total coins the whole colony has ever earned
+  final int userBaseBalance;  // The snapshot of colonyTotalCoins when the user joined
+  final int userRedeemed;     // Coins this specific user has already spent
+  final String? errorMessage;
+
+  LedgerState({
+    this.isLoading = true,
+    this.colonyId = '',
+    this.colonyTotalCoins = 0,
+    this.userBaseBalance = 0,
+    this.userRedeemed = 0,
+    this.errorMessage,
+  });
+
+  int get availableCoins {
+    final earnedSinceJoining = colonyTotalCoins - userBaseBalance;
+    final available = earnedSinceJoining - userRedeemed;
+    return available > 0 ? available : 0; //no garbage values
+  }
+
+  LedgerState copyWith({
+    bool? isLoading,
+    String? colonyId,
+    int? colonyTotalCoins,
+    int? userBaseBalance,
+    int? userRedeemed,
+    String? errorMessage,
+  }) {
+    return LedgerState(
+      isLoading: isLoading ?? this.isLoading,
+      colonyId: colonyId ?? this.colonyId,
+      colonyTotalCoins: colonyTotalCoins ?? this.colonyTotalCoins,
+      userBaseBalance: userBaseBalance ?? this.userBaseBalance,
+      userRedeemed: userRedeemed ?? this.userRedeemed,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+//The Notifier
+class ColonyLedgerNotifier extends Notifier<LedgerState> {
+  @override
+  LedgerState build() {
+    _fetchLedgerData();
+    return LedgerState();
+  }
+
+  Future<void> _fetchLedgerData() async {
+    // In Phase 4, this will be:
+    // 1. Get current User's document from Firestore (to get baseBalance and redeemed)
+    // 2. Get Colony document from Firestore (to get colonyTotalCoins)
+
+    // For now, we simulate a 1.5 second network call with dummy data
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    state = state.copyWith(
+      isLoading: false,
+      colonyId: 'URJA-JPR-444435',
+      colonyTotalCoins: 1250,   // The whole colony has 1250 coins
+      userBaseBalance: 1000,    // But it was at 1000 when this user joined (They earned 250)
+      userRedeemed: 50,         // And this user already spent 50 coins
+    );
+  }
+
+  Future<void> redeemCoins(int cost) async {
+    
+    if (state.availableCoins < cost) return;
+
+    state = state.copyWith(isLoading: true);
+
+    // Simulate sending the redemption to the backend
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Update the local state so the UI reflects the new balance instantly
+    state = state.copyWith(
+      isLoading: false,
+      userRedeemed: state.userRedeemed + cost,
+    );
+  }
+}
+
+// 3. The Global Provider
+final ledgerProvider = NotifierProvider<ColonyLedgerNotifier, LedgerState>(() {
+  return ColonyLedgerNotifier();
+});
