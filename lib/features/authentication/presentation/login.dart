@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:urja/core/shared_widgets/password_field.dart';
 import 'package:urja/core/shared_widgets/text_field.dart'; 
@@ -36,25 +35,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
-    // Call the notifier
+    // Call the notifier — on success, authStateProvider emits the new user,
+    // the FSM re-evaluates, and GoRouter redirects automatically.
     await ref.read(authControllerProvider.notifier).login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
-
-    // If login was successful (no error message), navigate to setup
-    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
-      context.go('/setup-colony');
-    }
   }
 
   Future<void> _handleGoogleLogin() async {
     await ref.read(authControllerProvider.notifier).googleLogin();
-    
-    // If login was successful (no error message), navigate to setup
-    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
-      context.go('/setup-colony');
-    }
   }
 
   @override

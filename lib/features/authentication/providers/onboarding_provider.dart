@@ -12,16 +12,23 @@ enum OnboardingStatus {
   fullyOnboarded,           // Good to go!
 }
 
+// Reactive layer so the FSM rebuilds when hasSeenOnboarding is toggled at runtime.
+final hasSeenOnboardingProvider = StateProvider<bool>((ref) {
+  return ref.read(sharedPrefsServiceProvider).hasSeenOnboarding;
+});
+
 final onboardingStatusProvider = Provider<OnboardingStatus>((ref) {
-  final hasSeenOnboarding = ref.read(sharedPrefsServiceProvider).hasSeenOnboarding;
-  
+  final hasSeenOnboarding = ref.watch(hasSeenOnboardingProvider);
+
   if (!hasSeenOnboarding) {
     return OnboardingStatus.firstTimeVisitor;
   }
 
   // 2. If they have seen it, proceed to your existing Firebase logic
-  final user = ref.watch(authStateProvider).value;
-  
+  final authState = ref.watch(authStateProvider);
+  if (authState.isLoading) return OnboardingStatus.checking;
+  final user = authState.value;
+
   if (user == null) {
     return OnboardingStatus.unauthenticated;
   }

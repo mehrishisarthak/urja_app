@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /colonies/{colonyId} {
+      allow read: if request.auth != null;
+
+      // Authenticated clients (including ESP32 via service account) may update
+      // ONLY totalCoinsEarned. Every other field is write-locked.
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data)
+                     .affectedKeys()
+                     .hasOnly(['totalCoinsEarned']);
+
+      allow create, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

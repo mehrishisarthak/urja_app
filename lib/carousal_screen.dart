@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:lottie/lottie.dart';
-import 'package:urja/core/services/shared_preferences_service.dart' show sharedPrefsServiceProvider;
+import 'package:urja/core/services/shared_preferences_service.dart';
+import 'package:urja/features/authentication/providers/onboarding_provider.dart';
 
 class CarousalScreen extends ConsumerStatefulWidget {
   const CarousalScreen({super.key});
@@ -20,13 +21,6 @@ class _CarousalScreenState extends ConsumerState<CarousalScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _completeOnboarding() async {
-    await ref.read(sharedPrefsServiceProvider).setHasSeenOnboarding();
-    if (mounted) {
-      context.go('/login');
-    }
   }
 
   @override
@@ -99,7 +93,10 @@ class _CarousalScreenState extends ConsumerState<CarousalScreen> {
             ),
             isLastPage
                 ? FilledButton(
-                    onPressed: _completeOnboarding,
+                    onPressed: () async {
+                      await ref.read(sharedPrefsServiceProvider).setHasSeenOnboarding();
+                      ref.read(hasSeenOnboardingProvider.notifier).state = true;
+                    },
                     style: FilledButton.styleFrom(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:urja/core/shared_widgets/password_field.dart';
 import 'package:urja/core/shared_widgets/text_field.dart'; 
@@ -47,27 +46,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
     FocusScope.of(context).unfocus();
 
-    // 2. Call the notifier
-    // Note: If you want to save the user's name to Firebase, you'll need to 
-    // update the AuthRepository later, but for now we just handle auth.
+    // Call the notifier — on success, authStateProvider emits the new user,
+    // the FSM re-evaluates, and GoRouter redirects automatically.
     await ref.read(authControllerProvider.notifier).signup(
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
-
-    // 3. If signup was successful (no error message), navigate to setup
-    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
-      context.go('/setup-colony');
-    }
   }
 
   Future<void> _handleGoogleSignup() async {
     await ref.read(authControllerProvider.notifier).googleLogin();
-    
-    // If login was successful (no error message), navigate to setup
-    if (ref.read(authControllerProvider).errorMessage == null && mounted) {
-      context.go('/setup-colony');
-    }
   }
 
   @override
