@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:urja/features/authentication/providers/user_profile_provider.dart'; 
 
+// 1. THE STATE MODEL (Unchanged)
 class LedgerState {
   final bool isLoading;
   final String colonyId;
-  final int colonyTotalCoins; // Total coins the whole colony has ever earned
-  final int userBaseBalance;  // The snapshot of colonyTotalCoins when the user joined
-  final int userRedeemed;     // Coins this specific user has already spent
+  final int colonyTotalCoins; 
+  final int userBaseBalance;  
+  final int userRedeemed;     
   final String? errorMessage;
 
   LedgerState({
@@ -20,71 +24,89 @@ class LedgerState {
   int get availableCoins {
     final earnedSinceJoining = colonyTotalCoins - userBaseBalance;
     final available = earnedSinceJoining - userRedeemed;
-    return available > 0 ? available : 0; //no garbage values
-  }
-
-  LedgerState copyWith({
-    bool? isLoading,
-    String? colonyId,
-    int? colonyTotalCoins,
-    int? userBaseBalance,
-    int? userRedeemed,
-    String? errorMessage,
-  }) {
-    return LedgerState(
-      isLoading: isLoading ?? this.isLoading,
-      colonyId: colonyId ?? this.colonyId,
-      colonyTotalCoins: colonyTotalCoins ?? this.colonyTotalCoins,
-      userBaseBalance: userBaseBalance ?? this.userBaseBalance,
-      userRedeemed: userRedeemed ?? this.userRedeemed,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
+    return available > 0 ? available : 0; 
   }
 }
 
-//The Notifier
-class ColonyLedgerNotifier extends Notifier<LedgerState> {
+// 2. THE LIVE COLONY STREAM (The Read Pipe 1)
+final liveColonyTotalProvider = StreamProvider<int>((ref) {
+  // Grab the user's profile from the stream we already built
+  final profile = ref.watch(userProfileProvider).value;
+  
+  if (profile == null || profile.colonyId == null) {
+    return Stream.value(0); // Failsafe
+  }
+
+  // Open a live pipe to the specific colony document
+  return FirebaseFirestore.instance
+      .collection('colonies')
+      .doc(profile.colonyId)
+      .snapshots()
+      .map((doc) {
+        if (!doc.exists) return 0;
+        final data = doc.data() as Map<String, dynamic>;
+        // Use ?? 0 to prevent null crashes
+        return data['totalCoinsEarned'] as int? ?? 0;
+      });
+});
+
+// 3. THE MATH ENGINE (The Combiner)
+final ledgerProvider = Provider<LedgerState>((ref) {
+  // Watch both live streams
+  final profileState = ref.watch(userProfileProvider);
+  final colonyTotalState = ref.watch(liveColonyTotalProvider);
+
+  // If either stream is still fetching from the cloud, show loading
+  if (profileState.isLoading || colonyTotalState.isLoading) {
+    return LedgerState(isLoading: true);
+  }
+
+  final profile = profileState.value;
+  final colonyTotal = colonyTotalState.value ?? 0;
+
+  if (profile == null) {
+    return LedgerState(errorMessage: "No profile found");
+  }
+
+  // Do the math automatically every time Firestore pushes an update!
+  return LedgerState(
+    isLoading: false,
+    colonyId: profile.colonyId ?? '',
+    colonyTotalCoins: colonyTotal,
+    userBaseBalance: profile.baseBalanceAtJoin,
+    userRedeemed: profile.coinsRedeemed,
+  );
+});
+
+class RedemptionController extends Notifier<bool> {
   @override
-  LedgerState build() {
-    _fetchLedgerData();
-    return LedgerState();
-  }
+  bool build() => false; // false = not currently loading
 
-  Future<void> _fetchLedgerData() async {
-    // In Phase 4, this will be:
-    // 1. Get current User's document from Firestore (to get baseBalance and redeemed)
-    // 2. Get Colony document from Firestore (to get colonyTotalCoins)
+  Future<void> redeemCoins(int cost, int availableCoins) async {
+    // 1. Guard checks
+    if (availableCoins < cost || state == true) return;
 
-    // For now, we simulate a 1.5 second network call with dummy data
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // 2. Set loading state to true
+    state = true;
 
-    state = state.copyWith(
-      isLoading: false,
-      colonyId: 'URJA-JPR-444435',
-      colonyTotalCoins: 1250,   // The whole colony has 1250 coins
-      userBaseBalance: 1000,    // But it was at 1000 when this user joined (They earned 250)
-      userRedeemed: 50,         // And this user already spent 50 coins
-    );
-  }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("User not logged in");
 
-  Future<void> redeemCoins(int cost) async {
-    
-    if (state.availableCoins < cost) return;
+      final db = FirebaseFirestore.instance;
+      await db.collection('users').doc(user.uid).update({
+        'coinsRedeemed': FieldValue.increment(cost),
+      });
 
-    state = state.copyWith(isLoading: true);
-
-    // Simulate sending the redemption to the backend
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Update the local state so the UI reflects the new balance instantly
-    state = state.copyWith(
-      isLoading: false,
-      userRedeemed: state.userRedeemed + cost,
-    );
+    } catch (e) {
+      print("Redemption Error: $e");
+    } finally {
+      // 4. Turn off loading state
+      state = false;
+    }
   }
 }
 
-// 3. The Global Provider
-final ledgerProvider = NotifierProvider<ColonyLedgerNotifier, LedgerState>(() {
-  return ColonyLedgerNotifier();
+final redemptionProvider = NotifierProvider<RedemptionController, bool>(() {
+  return RedemptionController();
 });

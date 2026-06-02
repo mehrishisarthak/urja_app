@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:urja/carousal_screen.dart';
 
 // Auth Features
 import 'package:urja/features/authentication/presentation/login.dart';
@@ -15,7 +16,7 @@ import 'package:urja/features/colony_ledger/presentation/dashboard_screen.dart';
 import 'package:urja/features/authentication/providers/onboarding_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // 1. The FSM is now LIVE. Any changes to Auth or Firestore will instantly rebuild this router.
+  // 1. The FSM is now LIVE. Any changes to Auth, Firestore, or SharedPreferences will instantly rebuild this router.
   final onboardingStatus = ref.watch(onboardingStatusProvider);
 
   return GoRouter(
@@ -26,8 +27,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isGoingToLogin = currentPath == '/login' || currentPath == '/signup';
       final isGoingToVerify = currentPath == '/verify-email';
       final isGoingToSetup = currentPath == '/setup-colony';
+      final isGoingToWelcome = currentPath == '/welcome';
 
       switch (onboardingStatus) {
+        case OnboardingStatus.firstTimeVisitor:
+          // Force to welcome carousel
+          return isGoingToWelcome ? null : '/welcome';
+
         case OnboardingStatus.unauthenticated:
           // Force to login/signup
           return isGoingToLogin ? null : '/login';
@@ -41,8 +47,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           return isGoingToSetup ? null : '/setup-colony';
 
         case OnboardingStatus.fullyOnboarded:
-          // If fully onboarded, block them from seeing auth screens again
-          if (isGoingToLogin || isGoingToVerify || isGoingToSetup) {
+          // If fully onboarded, block them from seeing auth OR welcome screens again
+          if (isGoingToLogin || isGoingToVerify || isGoingToSetup || isGoingToWelcome) {
             return '/dashboard';
           }
           return null; 
@@ -53,6 +59,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
     },
     routes: [
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const CarousalScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
@@ -68,7 +78,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         builder: (context, state) => const Scaffold(
-          body: Center(child: CircularProgressIndicator(color: Colors.green)), // Styled for Urja
+          body: Center(child: CircularProgressIndicator(color: Colors.green)), 
         ),
       ),
       GoRoute(

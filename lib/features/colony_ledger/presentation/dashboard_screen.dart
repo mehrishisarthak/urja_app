@@ -8,7 +8,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Watch the Ledger State
+    // 1. Watch the live mathematical state
     final ledgerState = ref.watch(ledgerProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -22,9 +22,7 @@ class DashboardScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: () async {
-              // The ultimate architecture test:
-              // Calling this automatically flips the FSM to unauthenticated,
-              // and GoRouter will instantly throw the user back to /login!
+              // Triggers the FSM to throw the user back to /login
               await FirebaseAuth.instance.signOut();
             },
           ),
@@ -35,8 +33,7 @@ class DashboardScreen extends ConsumerWidget {
           : RefreshIndicator(
               color: colorScheme.primary,
               onRefresh: () async {
-                // Allows the user to pull down to refresh their balance
-                // We'd add a refresh method to the Notifier later
+                // Future feature: pull-to-refresh manually
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -112,7 +109,7 @@ class DashboardScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             colorScheme.primary,
-            colorScheme.primaryContainer, // Adapts perfectly to your Light/Dark mode
+            colorScheme.primaryContainer, 
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -201,7 +198,11 @@ class DashboardScreen extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    
     final canAfford = availableCoins >= cost;
+    
+    // Watch the write-pipe controller to see if Firebase is currently processing a transaction
+    final isRedeeming = ref.watch(redemptionProvider);
 
     return Card(
       elevation: 0,
@@ -248,13 +249,19 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             ElevatedButton(
-              onPressed: canAfford 
-                  ? () => ref.read(ledgerProvider.notifier).redeemCoins(cost)
+              onPressed: (canAfford && !isRedeeming)
+                  ? () => ref.read(redemptionProvider.notifier).redeemCoins(cost, availableCoins)
                   : null, 
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Get'),
+              child: isRedeeming 
+                  ? const SizedBox(
+                      height: 16, 
+                      width: 16, 
+                      child: CircularProgressIndicator(strokeWidth: 2)
+                    )
+                  : const Text('Get'),
             ),
           ],
         ),

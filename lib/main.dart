@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Added
+import 'package:urja/core/services/shared_preferences_service.dart';
 import 'firebase_options.dart';
 import 'package:urja/core/routing/app_router.dart';
 import 'package:urja/core/theme/theme.dart';
@@ -8,13 +10,18 @@ import 'package:urja/core/theme/theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1. Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  final sharedPreferences = await SharedPreferences.getInstance();
 
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+      ],
+      child: const MyApp(),
     ),
   );
 }
