@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -9,7 +10,7 @@ class _Deal {
   final String name;
   final String tagline;
   final String offer;
-  final IconData icon;
+  final String logoPath;
   final int coins;
   final List<Color> colors;
 
@@ -17,7 +18,7 @@ class _Deal {
     required this.name,
     required this.tagline,
     required this.offer,
-    required this.icon,
+    required this.logoPath,
     required this.coins,
     required this.colors,
   });
@@ -28,23 +29,15 @@ const _deals = [
     name: 'Amazon Pay',
     tagline: 'Shop & Save',
     offer: '₹100 cashback on grocery orders above ₹500',
-    icon: Icons.shopping_bag_rounded,
+    logoPath: 'assets/amazon_logo.png',
     coins: 200,
     colors: [Color(0xFF26C6DA), Color(0xFF00838F)],
-  ),
-  _Deal(
-    name: 'BigBasket',
-    tagline: 'Fresh & Organic',
-    offer: 'Free delivery + 10% off on your next order',
-    icon: Icons.shopping_basket_rounded,
-    coins: 150,
-    colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
   ),
   _Deal(
     name: 'Swiggy',
     tagline: 'Food Delivered Fast',
     offer: 'Free delivery on your next 3 food orders',
-    icon: Icons.delivery_dining_rounded,
+    logoPath: 'assets/swiggy_logo.png',
     coins: 100,
     colors: [Color(0xFFFFA726), Color(0xFFE65100)],
   ),
@@ -52,18 +45,10 @@ const _deals = [
     name: 'Paytm',
     tagline: 'Pay Smarter',
     offer: '10% cashback on mobile recharge & bill payments',
-    icon: Icons.smartphone_rounded,
+    logoPath: 'assets/paytm_logo.png',
     coins: 120,
     colors: [Color(0xFF5C6BC0), Color(0xFF1A237E)],
-  ),
-  _Deal(
-    name: 'BookMyShow',
-    tagline: 'Entertainment Awaits',
-    offer: 'Buy 1 Get 1 on movie tickets (weekdays only)',
-    icon: Icons.local_movies_rounded,
-    coins: 300,
-    colors: [Color(0xFFAB47BC), Color(0xFF6A1B9A)],
-  ),
+  )
 ];
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
@@ -84,11 +69,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  // Handle the redemption and show the coupon dialog
+  Future<void> _handleRedeem(_Deal deal, int availableCoins) async {
+    try {
+      // Trigger the redemption via Riverpod
+      await ref.read(redemptionProvider.notifier).redeemCoins(deal.coins, availableCoins);
+      
+      // Ensure the widget is still mounted before showing the dialog
+      if (!mounted) return;
+
+      // Generate a random 6-digit coupon code
+      final randomCode = 'URJA-${Random().nextInt(900000) + 100000}';
+
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          final theme = Theme.of(ctx);
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            icon: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
+            title: Text(
+              'Deal Claimed!',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Your offer from ${deal.name} is ready.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(180)
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withAlpha(100),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: theme.colorScheme.primary.withAlpha(50), style: BorderStyle.solid),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'COUPON CODE',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        randomCode,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Got it!'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      // Redemption failed (handled silently or you can show a snackbar here)
+      debugPrint('Redemption failed: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    
     final ledger = ref.watch(ledgerProvider);
+    final isRedeeming = ref.watch(redemptionProvider); // Watch redemption state
 
     return SingleChildScrollView(
       child: Column(
@@ -116,11 +188,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           // ── Compact landscape carousel ────────────────────────────────────
           SizedBox(
-            height: 180,
+            height: 360,
             child: PageView.builder(
               controller: _pageController,
               itemCount: _deals.length,
-              itemBuilder: (_, i) => _DealCard(deal: _deals[i]),
+              itemBuilder: (_, i) => _DealCard(
+                deal: _deals[i],
+                availableCoins: ledger.availableCoins,
+                isRedeeming: isRedeeming,
+                onRedeem: () => _handleRedeem(_deals[i], ledger.availableCoins),
+              ),
             ),
           ),
 
@@ -164,12 +241,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 class _DealCard extends StatelessWidget {
   final _Deal deal;
-  const _DealCard({required this.deal});
+  final int availableCoins;
+  final bool isRedeeming;
+  final VoidCallback onRedeem;
+
+  const _DealCard({
+    required this.deal,
+    required this.availableCoins,
+    required this.isRedeeming,
+    required this.onRedeem,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final canAfford = availableCoins >= deal.coins; // Validation check
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -189,7 +276,7 @@ class _DealCard extends StatelessWidget {
           children: [
             // Left: brand identity panel
             Container(
-              width: 110,
+              width: 130, 
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -201,14 +288,22 @@ class _DealCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(35),
+                    width: 70,
+                    height: 70,
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.white, 
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(deal.icon, color: Colors.white, size: 26),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      deal.logoPath,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => 
+                          Icon(Icons.image_not_supported, color: deal.colors[0]),
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Text(
@@ -216,15 +311,15 @@ class _DealCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 15, 
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withAlpha(35),
                       borderRadius: BorderRadius.circular(10),
@@ -232,13 +327,17 @@ class _DealCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.stars_rounded, color: Colors.amber, size: 12),
-                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.stars_rounded, 
+                          color: canAfford ? Colors.amber : Colors.white70, 
+                          size: 14
+                        ),
+                        const SizedBox(width: 4),
                         Text(
                           '${deal.coins} coins',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
+                          style: TextStyle(
+                            color: canAfford ? Colors.white : Colors.white70,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -253,13 +352,13 @@ class _DealCard extends StatelessWidget {
             Expanded(
               child: Container(
                 color: colorScheme.surface,
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: deal.colors[0].withAlpha(22),
                         borderRadius: BorderRadius.circular(6),
@@ -267,46 +366,59 @@ class _DealCard extends StatelessWidget {
                       child: Text(
                         'PARTNER OFFER',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: deal.colors[0],
                           letterSpacing: 0.8,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
                       deal.tagline,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
                       deal.offer,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface.withAlpha(155),
                         height: 1.4,
                       ),
-                      maxLines: 3,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     SizedBox(
-                      height: 30,
+                      height: 38,
+                      width: 100,
                       child: FilledButton(
-                        onPressed: () {},
+                        // Disable if redeeming or can't afford
+                        onPressed: (canAfford && !isRedeeming) ? onRedeem : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: deal.colors[1],
+                          disabledBackgroundColor: colorScheme.surfaceContainerHighest,
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Claim',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
+                        // Show loading indicator if currently redeeming
+                        child: isRedeeming 
+                            ? SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              )
+                            : const Text(
+                                'Claim',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
                       ),
                     ),
                   ],

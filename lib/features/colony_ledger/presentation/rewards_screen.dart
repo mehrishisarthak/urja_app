@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../notifiers/colony_ledger_notifier.dart';
@@ -9,70 +10,151 @@ class _Brand {
   final String offer;
   final int coins;
   final Color color;
-  final IconData icon;
+  final String logoPath;
 
   const _Brand({
     required this.name,
     required this.offer,
     required this.coins,
     required this.color,
-    required this.icon,
+    required this.logoPath,
   });
 }
 
-class _Category {
-  final String title;
-  final List<_Brand> brands;
-  const _Category({required this.title, required this.brands});
-}
+// Just the deals you actually want to show
+const _activeDeals = [
+  _Brand(
+    name: 'Swiggy',
+    offer: 'Free delivery × 3 orders',
+    coins: 100,
+    color: Color(0xFFE65100),
+    logoPath: 'assets/swiggy_logo.png',
+  ),
+  _Brand(
+    name: 'Amazon',
+    offer: '₹100 cashback on ₹500+',
+    coins: 200,
+    color: Color(0xFF00838F),
+    logoPath: 'assets/amazon_logo.png',
+  ),
+  _Brand(
+    name: 'Paytm',
+    offer: '10% cashback on mobile recharge & bill payments',
+    coins: 120,
+    color: Color(0xFF5C6BC0),
+    logoPath: 'assets/paytm_logo.png',
+  ),
+];
 
-const _categories = [
-  _Category(
-    title: 'Society Perks',
-    brands: [
-      _Brand(name: 'Maintenance', offer: '10% off monthly bill', coins: 150, color: Color(0xFF2E7D32), icon: Icons.receipt_long_outlined),
-      _Brand(name: 'Parking Upgrade', offer: 'Premium spot · weekend', coins: 300, color: Color(0xFF1565C0), icon: Icons.local_parking_outlined),
-      _Brand(name: 'Gym Access', offer: 'Full-month club pass', coins: 400, color: Color(0xFF6A1B9A), icon: Icons.fitness_center_outlined),
-      _Brand(name: 'Pool Entry', offer: 'Weekend pool access', coins: 200, color: Color(0xFF00695C), icon: Icons.pool_outlined),
-      _Brand(name: 'Guest Parking', offer: '5 visitor passes', coins: 100, color: Color(0xFF4527A0), icon: Icons.directions_car_outlined),
-    ],
-  ),
-  _Category(
-    title: 'Food & Dining',
-    brands: [
-      _Brand(name: 'Swiggy', offer: 'Free delivery × 3 orders', coins: 100, color: Color(0xFFE65100), icon: Icons.delivery_dining_rounded),
-      _Brand(name: 'Zomato', offer: '20% off your next order', coins: 80, color: Color(0xFFC62828), icon: Icons.restaurant_rounded),
-      _Brand(name: 'BigBasket', offer: '10% off groceries', coins: 120, color: Color(0xFF2E7D32), icon: Icons.shopping_basket_rounded),
-      _Brand(name: 'Blinkit', offer: 'Free delivery on 2 orders', coins: 60, color: Color(0xFFF9A825), icon: Icons.bolt_rounded),
-    ],
-  ),
-  _Category(
-    title: 'Shopping',
-    brands: [
-      _Brand(name: 'Amazon', offer: '₹100 cashback on ₹500+', coins: 200, color: Color(0xFF00838F), icon: Icons.shopping_bag_rounded),
-      _Brand(name: 'Myntra', offer: '30% off fashion picks', coins: 250, color: Color(0xFFAD1457), icon: Icons.checkroom_outlined),
-      _Brand(name: 'Flipkart', offer: '15% off electronics', coins: 180, color: Color(0xFF1565C0), icon: Icons.phone_android_outlined),
-      _Brand(name: 'Nykaa', offer: 'Beauty deals bundle', coins: 160, color: Color(0xFF880E4F), icon: Icons.face_retouching_natural_outlined),
-    ],
-  ),
-  _Category(
-    title: 'Health & Eco',
-    brands: [
-      _Brand(name: 'Mamaearth', offer: 'Natural skincare kit', coins: 150, color: Color(0xFF388E3C), icon: Icons.spa_outlined),
-      _Brand(name: 'Himalaya', offer: 'Herbal products pack', coins: 120, color: Color(0xFF00695C), icon: Icons.local_florist_outlined),
-      _Brand(name: 'Organic Tatva', offer: 'Fresh produce box', coins: 80, color: Color(0xFF558B2F), icon: Icons.agriculture_outlined),
-      _Brand(name: 'EcoSport', offer: 'Sustainable gear deal', coins: 200, color: Color(0xFF1B5E20), icon: Icons.directions_run_rounded),
-    ],
+// Coming soon gift cards
+const _giftCards = [
+  _Brand(
+    name: 'Amazon Pay',
+    offer: '₹500 Gift Card',
+    coins: 1000,
+    color: Color(0xFF00838F),
+    logoPath: 'assets/amazon_logo.png',
   ),
 ];
 
 // ─── RewardsScreen ────────────────────────────────────────────────────────────
 
-class RewardsScreen extends ConsumerWidget {
+class RewardsScreen extends ConsumerStatefulWidget {
   const RewardsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RewardsScreen> createState() => _RewardsScreenState();
+}
+
+class _RewardsScreenState extends ConsumerState<RewardsScreen> {
+  
+  // Handle the redemption and show the coupon dialog
+  Future<void> _handleRedeem(_Brand brand, int availableCoins) async {
+    try {
+      // Trigger the redemption via Riverpod
+      await ref.read(redemptionProvider.notifier).redeemCoins(brand.coins, availableCoins);
+      
+      // Ensure the widget is still mounted before showing the dialog
+      if (!mounted) return;
+
+      // Generate a random 6-digit coupon code
+      final randomCode = 'URJA-${Random().nextInt(900000) + 100000}';
+
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          final theme = Theme.of(ctx);
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            icon: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
+            title: Text(
+              'Deal Claimed!',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Your offer from ${brand.name} is ready.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(180)
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withAlpha(100),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: theme.colorScheme.primary.withAlpha(50), style: BorderStyle.solid),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'COUPON CODE',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        randomCode,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Got it!'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      // Redemption failed
+      debugPrint('Redemption failed: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final ledger = ref.watch(ledgerProvider);
@@ -86,89 +168,74 @@ class RewardsScreen extends ConsumerWidget {
       children: [
         // ── Wallet card ──────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: _WalletCard(ledger: ledger),
         ),
 
-        // ── Category sections ────────────────────────────────────────────────
-        for (final category in _categories)
-          _CategorySection(
-            category: category,
-            availableCoins: ledger.availableCoins,
-            isRedeeming: isRedeeming,
-            onRedeem: (cost) =>
-                ref.read(redemptionProvider.notifier).redeemCoins(cost, ledger.availableCoins),
-          ),
-
-        const SizedBox(height: 32),
-      ],
-    );
-  }
-}
-
-// ─── Category section ─────────────────────────────────────────────────────────
-
-class _CategorySection extends StatelessWidget {
-  final _Category category;
-  final int availableCoins;
-  final bool isRedeeming;
-  final void Function(int cost) onRedeem;
-
-  const _CategorySection({
-    required this.category,
-    required this.availableCoins,
-    required this.isRedeeming,
-    required this.onRedeem,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 8, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                category.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text('View All'),
-              ),
-            ],
-          ),
-        ),
-
-        // Horizontal brand cards
+        // ── Active Deals ─────────────────────────────────────────────────────
+        const _SectionHeader(title: 'Active Deals'),
         SizedBox(
-          height: 178,
+          height: 190,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(left: 20, right: 8),
-            itemCount: category.brands.length,
+            itemCount: _activeDeals.length,
             itemBuilder: (_, i) {
-              final brand = category.brands[i];
+              final brand = _activeDeals[i];
               return _BrandCard(
                 brand: brand,
-                availableCoins: availableCoins,
+                availableCoins: ledger.availableCoins,
                 isRedeeming: isRedeeming,
-                onRedeem: () => onRedeem(brand.coins),
+                onRedeem: () => _handleRedeem(brand, ledger.availableCoins),
               );
             },
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 32),
+
+        // ── Gift Cards (Coming Soon) ─────────────────────────────────────────
+        const _SectionHeader(title: 'Gift Cards (Coming Soon)'),
+        SizedBox(
+          height: 190,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(left: 20, right: 8),
+            itemCount: _giftCards.length,
+            itemBuilder: (_, i) {
+              return _BrandCard(
+                brand: _giftCards[i],
+                availableCoins: ledger.availableCoins,
+                isRedeeming: false,
+                isComingSoon: true, // Flags this card as disabled
+                onRedeem: () {},
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 40),
       ],
+    );
+  }
+}
+
+// ─── Section Header ───────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+      ),
     );
   }
 }
@@ -179,12 +246,14 @@ class _BrandCard extends StatelessWidget {
   final _Brand brand;
   final int availableCoins;
   final bool isRedeeming;
+  final bool isComingSoon;
   final VoidCallback onRedeem;
 
   const _BrandCard({
     required this.brand,
     required this.availableCoins,
     required this.isRedeeming,
+    this.isComingSoon = false,
     required this.onRedeem,
   });
 
@@ -195,17 +264,17 @@ class _BrandCard extends StatelessWidget {
     final canAfford = availableCoins >= brand.coins;
 
     return Container(
-      width: 148,
-      margin: const EdgeInsets.only(right: 12),
+      width: 156, // Slightly widened for breathing room
+      margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withAlpha(60)),
+        border: Border.all(color: theme.dividerColor.withAlpha(40)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withAlpha(8), // Softer, cleaner shadow
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -214,55 +283,72 @@ class _BrandCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Colored icon + name section
+            // Colored logo + name section
             Container(
-              height: 95,
-              color: brand.color.withAlpha(18),
+              height: 105,
+              color: isComingSoon 
+                  ? colorScheme.surfaceContainerHighest.withAlpha(100) 
+                  : brand.color.withAlpha(18),
               child: Stack(
                 children: [
                   // "Urja Perk" label
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'Urja Perk',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                          letterSpacing: 0.3,
+                  if (!isComingSoon)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'PARTNER',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // Icon + name centered
+                  // Logo + name centered
                   Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        const SizedBox(height: 10),
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: brand.color.withAlpha(30),
+                          width: 44,
+                          height: 44,
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(brand.icon, color: brand.color, size: 26),
+                          clipBehavior: Clip.antiAlias,
+                          child: isComingSoon 
+                              ? Opacity(
+                                  opacity: 0.4,
+                                  child: Image.asset(brand.logoPath, fit: BoxFit.contain),
+                                )
+                              : Image.asset(
+                                  brand.logoPath,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(Icons.image_not_supported, color: brand.color),
+                                ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
                             brand.name,
                             style: TextStyle(
-                              color: brand.color,
+                              color: isComingSoon ? colorScheme.onSurface.withAlpha(100) : brand.color,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12.5,
+                              fontSize: 13,
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 1,
@@ -279,7 +365,7 @@ class _BrandCard extends StatelessWidget {
             // Offer + coin + button section
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -287,39 +373,45 @@ class _BrandCard extends StatelessWidget {
                       child: Text(
                         brand.offer,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withAlpha(155),
-                          height: 1.35,
+                          color: isComingSoon 
+                              ? colorScheme.onSurface.withAlpha(100)
+                              : colorScheme.onSurface.withAlpha(170),
+                          height: 1.3,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(
                           Icons.stars_rounded,
-                          size: 13,
-                          color: canAfford ? Colors.amber.shade700 : colorScheme.error,
+                          size: 14,
+                          color: isComingSoon 
+                              ? colorScheme.onSurface.withAlpha(80)
+                              : (canAfford ? Colors.amber.shade700 : colorScheme.error),
                         ),
-                        const SizedBox(width: 3),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             '${brand.coins}',
                             style: theme.textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: canAfford ? colorScheme.primary : colorScheme.error,
+                              color: isComingSoon
+                                  ? colorScheme.onSurface.withAlpha(80)
+                                  : (canAfford ? colorScheme.primary : colorScheme.error),
                             ),
                           ),
                         ),
                         SizedBox(
-                          height: 26,
+                          height: 28,
                           child: FilledButton(
-                            onPressed: (canAfford && !isRedeeming) ? onRedeem : null,
+                            onPressed: (canAfford && !isRedeeming && !isComingSoon) ? onRedeem : null,
                             style: FilledButton.styleFrom(
                               backgroundColor: brand.color,
                               disabledBackgroundColor: colorScheme.surfaceContainerHighest,
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -333,7 +425,13 @@ class _BrandCard extends StatelessWidget {
                                       color: colorScheme.onPrimary,
                                     ),
                                   )
-                                : const Text('Get', style: TextStyle(fontSize: 11)),
+                                : Text(
+                                    isComingSoon ? 'Soon' : 'Get', 
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isComingSoon ? colorScheme.onSurface.withAlpha(120) : Colors.white,
+                                    )
+                                  ),
                           ),
                         ),
                       ],
@@ -371,8 +469,8 @@ class _WalletCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withAlpha(60),
-            blurRadius: 18,
+            color: colorScheme.primary.withAlpha(50),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -386,12 +484,12 @@ class _WalletCard extends StatelessWidget {
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Icon(Icons.stars_rounded, color: colorScheme.secondary, size: 38),
+              Icon(Icons.stars_rounded, color: colorScheme.secondary, size: 42),
               const SizedBox(width: 10),
               Text(
                 '${ledger.availableCoins}',
@@ -403,10 +501,10 @@ class _WalletCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             'Colony Total: ${ledger.colonyTotalCoins} coins',
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onPrimary.withAlpha(180),
             ),
           ),

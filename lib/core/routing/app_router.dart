@@ -44,10 +44,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return isGoingToSetup ? null : '/setup-colony';
 
         case OnboardingStatus.fullyOnboarded:
-          if (isGoingToLogin || isGoingToVerify || isGoingToSetup || isGoingToWelcome) {
-            return '/dashboard';
-          }
-          return null;
+          // Also redirect away from /splash — it's the transient loading screen
+          // and must not be the final destination for a fully onboarded user.
+          final isBlockedPath = isGoingToLogin || isGoingToVerify ||
+              isGoingToSetup || isGoingToWelcome || currentPath == '/splash';
+          return isBlockedPath ? '/dashboard' : null;
 
         case OnboardingStatus.checking:
           return currentPath == '/splash' ? null : '/splash';

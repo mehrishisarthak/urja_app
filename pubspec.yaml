@@ -47,10 +47,21 @@ flutter:
   uses-material-design: true
 
   assets:
+    # Lottie Animations
     - assets/lottie/coins.json
     - assets/lottie/colony.json
     - assets/lottie/recycle.json
     - assets/lottie/energy_bulb.json
     - assets/lottie/truck.json
+    
+    # Icons
     - assets/icon/google.png
     - assets/icon/app_logo.png
+    
+    # Logos
+    - assets/amazon_logo.png
+    - assets/swiggy_logo.png
+    - assets/paytm_logo.png
+    
+    # README & App Gallery Screenshots
+    - assets/screenshot/
