@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:urja/core/services/shared_preferences_service.dart';
 import 'package:urja/features/authentication/providers/user_profile_provider.dart';
 import '../notifiers/auth_notifier.dart';

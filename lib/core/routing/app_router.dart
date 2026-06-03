@@ -16,14 +16,15 @@ import 'package:urja/features/colony_ledger/presentation/dashboard_screen.dart';
 import 'package:urja/features/authentication/providers/onboarding_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // 1. The FSM is now LIVE. Any changes to Auth, Firestore, or SharedPreferences will instantly rebuild this router.
-  final onboardingStatus = ref.watch(onboardingStatusProvider);
+  late final GoRouter router;
 
-  return GoRouter(
-    initialLocation: '/dashboard', 
+  router = GoRouter(
+    initialLocation: '/dashboard',
     redirect: (context, state) {
+      // Always read the latest status — never captured in a stale closure.
+      final onboardingStatus = ref.read(onboardingStatusProvider);
       final currentPath = state.matchedLocation;
-      
+
       final isGoingToLogin = currentPath == '/login' || currentPath == '/signup';
       final isGoingToVerify = currentPath == '/verify-email';
       final isGoingToSetup = currentPath == '/setup-colony';
@@ -31,31 +32,25 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       switch (onboardingStatus) {
         case OnboardingStatus.firstTimeVisitor:
-          // Force to welcome carousel
           return isGoingToWelcome ? null : '/welcome';
 
         case OnboardingStatus.unauthenticated:
-          // Force to login/signup
           return isGoingToLogin ? null : '/login';
 
         case OnboardingStatus.emailVerificationPending:
-          // Force to verify email
           return isGoingToVerify ? null : '/verify-email';
 
         case OnboardingStatus.needsColonySetup:
-          // Force to colony setup
           return isGoingToSetup ? null : '/setup-colony';
 
         case OnboardingStatus.fullyOnboarded:
-          // If fully onboarded, block them from seeing auth OR welcome screens again
           if (isGoingToLogin || isGoingToVerify || isGoingToSetup || isGoingToWelcome) {
             return '/dashboard';
           }
-          return null; 
-          
+          return null;
+
         case OnboardingStatus.checking:
-          // Show splash screen while Firebase loads
-          return '/splash'; 
+          return currentPath == '/splash' ? null : '/splash';
       }
     },
     routes: [
@@ -78,7 +73,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         builder: (context, state) => const Scaffold(
-          body: Center(child: CircularProgressIndicator(color: Colors.green)), 
+          body: Center(child: CircularProgressIndicator(color: Colors.green)),
         ),
       ),
       GoRoute(
@@ -91,4 +86,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // When auth/profile/onboarding state changes, tell the existing router to
+  // re-evaluate its redirect — no need to recreate the whole GoRouter.
+  ref.listen(onboardingStatusProvider, (_, __) => router.refresh());
+
+  ref.onDispose(router.dispose);
+
+  return router;
 });

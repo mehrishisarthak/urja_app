@@ -5,12 +5,18 @@ service cloud.firestore {
     match /colonies/{colonyId} {
       allow read: if request.auth != null;
 
-      // Authenticated clients (including ESP32 via service account) may update
-      // ONLY totalCoinsEarned. Every other field is write-locked.
+      // ESP32 increments totalCoinsEarned via a pure DocumentTransform.
+      // For transforms, request.resource.data only contains the transformed
+      // field (not the full doc), so diff() breaks. Use field-level checks
+      // instead: coins must only increase, and protected fields stay unchanged.
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data)
-                     .affectedKeys()
-                     .hasOnly(['totalCoinsEarned']);
+        && request.resource.data.get('totalCoinsEarned', 0)
+             >= resource.data.get('totalCoinsEarned', 0)
+        && request.resource.data.get('name',        resource.data.name)        == resource.data.name
+        && request.resource.data.get('city',        resource.data.city)        == resource.data.city
+        && request.resource.data.get('state',       resource.data.state)       == resource.data.state
+        && request.resource.data.get('isActive',    resource.data.isActive)    == resource.data.isActive
+        && request.resource.data.get('memberCount', resource.data.memberCount) == resource.data.memberCount;
 
       allow create, delete: if false;
     }

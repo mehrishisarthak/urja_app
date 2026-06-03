@@ -15,6 +15,10 @@
  *   MFRC522 GND  → GND
  */
 
+// These must come before FirebaseClient.h to enable the right modules
+#define ENABLE_USER_AUTH
+#define ENABLE_FIRESTORE
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -22,27 +26,31 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define RFID_SS_PIN   5
-#define RFID_RST_PIN  22
+// ─── Pin config ───────────────────────────────────────────────────────────────
+#define RFID_SS_PIN  5
+#define RFID_RST_PIN 22
 
-#define WIFI_SSID         "ARBAN"
-#define WIFI_PASSWORD     "x87hd4s3"
+// ─── Credentials ──────────────────────────────────────────────────────────────
+#define WIFI_SSID             "ARBAN"
+#define WIFI_PASSWORD         "x87hd4s3"
 
-#define FIREBASE_API_KEY  "AIzaSyB1Srqm2E5KWl5pJCXM4k2dXFqQl8eFfoY"
+#define FIREBASE_API_KEY      "AIzaSyB1Srqm2E5KWl5pJCXM4k2dXFqQl8eFfoY"
+#define FIREBASE_USER_EMAIL   "esp32-node-1@urja.internal"
+#define FIREBASE_USER_PASSWORD "umesh4sharma"
 
-#define COLONY_CODE       "URJA-JPR-444435"
+#define COLONY_CODE  "URJA-JPR-444435"
+#define PROJECT_ID   "urjaapp-c0cc6"
 
-#define PROJECT_ID  "urjaapp-c0cc6"
-
+// Full Firestore document resource name used by DocumentTransform
 #define DOC_PATH \
   "projects/" PROJECT_ID "/databases/(default)/documents/colonies/" COLONY_CODE
 
-// UserAuth with empty email/password → anonymous sign-in (signUp REST endpoint)
-DefaultNetwork   network;
-UserAuth         user_auth(FIREBASE_API_KEY, "esp32-node-1@urja.internal", "umesh4sharma" );
-FirebaseApp      app;
-WiFiClientSecure ssl_client;
-AsyncClientClass aClient(ssl_client, getNetwork(network));
+// ─── Firebase objects ─────────────────────────────────────────────────────────
+DefaultNetwork      network;
+UserAuth            user_auth(FIREBASE_API_KEY, FIREBASE_USER_EMAIL, FIREBASE_USER_PASSWORD);
+FirebaseApp         app;
+WiFiClientSecure    ssl_client;
+AsyncClientClass    aClient(ssl_client, getNetwork(network));
 Firestore::Documents Docs;
 
 // ─── RFID ─────────────────────────────────────────────────────────────────────
@@ -68,25 +76,22 @@ void printUID() {
 
 // ─── Atomic Firestore increment (+30 totalCoinsEarned) ───────────────────────
 void commitIncrement() {
-  // 1. FieldTransform: increment totalCoinsEarned by 30
+  // FieldTransform: server-side atomic increment
   DocumentTransform::FieldTransform ft;
   ft.fieldPath("totalCoinsEarned");
   ft.increment(Values::IntegerValue(30));
 
-  // 2. Attach transform to the colony document
-  DocumentTransform dt;
-  dt.document(DOC_PATH);
-  dt.fieldTransforms(ft);
-
-  // 3. Wrap in a Write
+  // Combined update (empty body) + updateTransforms so that
+  // request.resource.data in Firestore security rules contains the full
+  // document, not just the transformed field.
+  Document<Values::StringValue> emptyDoc(DOC_PATH);
   Write w;
-  w.transform(dt);
-
-  // 4. Build the Writes payload (supports batching; we send one)
+  w.update(emptyDoc);
+  w.updateTransforms(ft);
   Writes writes;
   writes.writes(w);
 
-  // 5. Fire the commit and wait for result (max 10 s)
+  // 4. Commit and wait (max 10 s)
   AsyncResult result;
   Docs.commit(aClient, Firestore::Parent(PROJECT_ID), writes, result);
 
@@ -105,12 +110,14 @@ void commitIncrement() {
     int code = result.error().code();
     Serial.printf("[Firestore] HTTP %d — %s\n",
                   code, result.error().message().c_str());
+    if (code == 400)
+      Serial.println("  → Fix: colony document does not exist yet — create colonies/" COLONY_CODE " in Firebase console with totalCoinsEarned: 0");
     if (code == 401)
-      Serial.println("  → Fix: enable Anonymous Auth in Firebase console (Auth → Sign-in method)");
+      Serial.println("  → Fix: enable Email/Password auth in Firebase console");
     if (code == 403)
-      Serial.println("  → Fix: COLONY_CODE doesn't match a Firestore doc, OR run: firebase deploy --only firestore:rules");
+      Serial.println("  → Fix: COLONY_CODE mismatch, or deploy firestore.rules");
   } else {
-    Serial.println("[Firestore] HTTP 200 — +30 coins committed (atomic increment)");
+    Serial.println("[Firestore] HTTP 200 — +30 coins committed");
   }
 }
 
@@ -120,12 +127,10 @@ void setup() {
   delay(400);
   Serial.println("\n=== Urja RFID Node ===");
 
-  // SPI with explicit GPIO assignments for ESP32
-  SPI.begin(18 /*SCK*/, 19 /*MISO*/, 23 /*MOSI*/, RFID_SS_PIN /*SS*/);
+  SPI.begin(18 /*SCK*/, 19 /*MISO*/, 23 /*MOSI*/, RFID_SS_PIN);
   rfid.PCD_Init();
   Serial.println("RFID ready");
 
-  // WiFi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("WiFi connecting");
   while (WiFi.status() != WL_CONNECTED) {
@@ -134,17 +139,14 @@ void setup() {
   }
   Serial.printf(" OK  IP: %s\n", WiFi.localIP().toString().c_str());
 
-  // Skip TLS cert verification.
-  // For production, set the Firebase root CA instead:
-  //   ssl_client.setCACert(FIREBASE_ROOT_CA);
+  // Skip TLS cert verification (fine for a local IoT node).
+  // For production: ssl_client.setCACert(FIREBASE_ROOT_CA);
   ssl_client.setInsecure();
 
-  // Init Firebase (anonymous sign-in triggered by empty email/password)
   initializeApp(aClient, app, getAuth(user_auth), onAuthEvent, "authTask");
   app.getApp<Firestore::Documents>(Docs);
 
-  // Block until auth token is ready (max 15 s)
-  Serial.print("Signing in anonymously");
+  Serial.print("Signing in");
   unsigned long t0 = millis();
   while (!app.ready() && millis() - t0 < 15000) {
     app.loop();
@@ -156,27 +158,22 @@ void setup() {
   if (app.ready()) {
     Serial.println("Auth OK  →  tap a card to add +30 coins");
   } else {
-    Serial.println("Auth failed. Check FIREBASE_API_KEY and that Anonymous Auth is enabled.");
+    Serial.println("Auth failed. Check FIREBASE_API_KEY and Email/Password auth settings.");
   }
 }
 
 // ─── Loop ─────────────────────────────────────────────────────────────────────
 void loop() {
-  app.loop();  // keeps the anonymous token refreshed automatically
+  app.loop();  // keeps auth token refreshed
 
   if (!app.ready()) return;
-
-  // Early-out if no new card is in the field
   if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) return;
 
   printUID();
-
-  // Halt the card so it won't fire again until removed and re-tapped
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
 
   commitIncrement();
 
-  // Debounce: ignore new cards for 2 s after a successful tap
-  delay(2000);
+  delay(2000);  // debounce: ignore re-taps for 2 s
 }

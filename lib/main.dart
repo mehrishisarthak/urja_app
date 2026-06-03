@@ -6,6 +6,7 @@ import 'package:urja/core/services/shared_preferences_service.dart';
 import 'firebase_options.dart';
 import 'package:urja/core/routing/app_router.dart';
 import 'package:urja/core/theme/theme.dart';
+import 'package:urja/core/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,12 +33,13 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'Urja',
       debugShowCheckedModeBanner: false,
       theme: lightMode,
       darkTheme: darkMode,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: goRouter,
     );
   }
